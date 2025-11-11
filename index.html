@@ -1,11 +1,55 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>NAN - Gestor de librerías Nova</title>
-  </head>
-  <body>
-    <h1>🚀 Bienvenido a NAN</h1>
-    <p>Publica, instala y comparte librerías Nova.</p>
-  </body>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>nan • Nova Package Registry</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>nan • Nova Package Registry</h1>
+
+    <section id="auth">
+      <h2>Registro / Login</h2>
+      <input id="username" placeholder="usuario" />
+      <input id="email" placeholder="email (solo para registro)" />
+      <input id="password" type="password" placeholder="contraseña" />
+      <div class="row">
+        <button id="btn-register">Registrar</button>
+        <button id="btn-login">Login</button>
+      </div>
+      <div id="auth-msg" class="msg"></div>
+    </section>
+
+    <section id="api-key" hidden>
+      <h2>API Key</h2>
+      <div id="api-output" class="mono"></div>
+      <button id="btn-genapi">Generar / Regenerar API Key</button>
+    </section>
+
+    <section id="publish" hidden>
+      <h2>Publicar paquete</h2>
+      <input id="pkg-name" placeholder="nombre-paquete" />
+      <input id="pkg-version" placeholder="versión (ej: 1.0.0)" />
+      <input id="pkg-desc" placeholder="descripción" />
+      <input id="pkg-file" type="file" accept=".zip,.tar,.tar.gz" />
+      <button id="btn-publish">Publicar</button>
+      <div id="pub-msg" class="msg"></div>
+    </section>
+
+    <section id="install">
+      <h2>Instalar desde web</h2>
+      <input id="install-name" placeholder="nombre-paquete@versión" />
+      <button id="btn-install">Mostrar comando nan install</button>
+      <div id="install-cmd" class="mono"></div>
+    </section>
+
+    <footer>
+      <small>Somos un equipo de desarrolladores (Nova team). Privacidad real: guardamos sólo lo necesario.</small>
+    </footer>
+  </main>
+
+<script src="main.js"></script>
+</body>
 </html>
