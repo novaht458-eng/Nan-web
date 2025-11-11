@@ -1,4 +1,6 @@
+// netlify/functions/helper_github.js
 const fetch = require('node-fetch');
+
 const owner = process.env.GITHUB_OWNER;
 const repo  = process.env.GITHUB_REPO;
 const token = process.env.GITHUB_TOKEN;
@@ -33,4 +35,17 @@ async function putFile(path, contentStr, message){
   return res.json();
 }
 
-module.exports = { getFile, putFile };
+async function deleteFile(path, message){
+  // delete file at path (requires sha)
+  const existing = await getFile(path);
+  if (!existing || !existing.sha) return { ok:false, error:'not found' };
+  const url = `${base}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`;
+  const body = {
+    message: message || `delete ${path}`,
+    sha: existing.sha
+  };
+  const res = await fetch(url, { method:'DELETE', headers: ghHeaders(), body: JSON.stringify(body) });
+  return res.json();
+}
+
+module.exports = { getFile, putFile, deleteFile };
