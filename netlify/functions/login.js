@@ -1,6 +1,6 @@
-// netlify/functions/register.js
+// netlify/functions/login.js
 
-import { writeFile, readFile } from "fs/promises";
+import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -21,21 +21,16 @@ export async function handler(event) {
     const data = await readFile(usersFile, "utf8");
     const users = JSON.parse(data);
 
-    if (users.find(u => u.username === username)) {
-      return { statusCode: 400, body: "Usuario ya existe" };
+    const user = users.find(u => u.username === username && u.password === password);
+    if (!user) {
+      return { statusCode: 401, body: "Usuario o contraseña incorrectos" };
     }
 
-    users.push({ username, password });
-
-    await writeFile(usersFile, JSON.stringify(users, null, 2));
-
-    // Respuesta con login automático
     return {
       statusCode: 200,
       body: JSON.stringify({
         success: true,
-        message: "Registrado con éxito",
-        autoLogin: true,
+        message: "Inicio de sesión correcto",
         user: username
       })
     };

@@ -50,6 +50,75 @@
     </footer>
   </main>
 
-<script src="main.js"></script>
+  <script>
+    const msg = (text, color = "black") => {
+      const box = document.getElementById("auth-msg");
+      box.textContent = text;
+      box.style.color = color;
+    };
+
+    const showAPI = (user) => {
+      document.getElementById("auth").hidden = true;
+      document.getElementById("api-key").hidden = false;
+      document.getElementById("publish").hidden = false;
+      document.getElementById("api-output").textContent = "Usuario: " + user;
+    };
+
+    // ✅ Autologin si ya hay sesión guardada
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) showAPI(savedUser);
+
+    // ✅ REGISTRO
+    document.getElementById("btn-register").addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (!username || !password) return msg("Completa usuario y contraseña", "red");
+
+      msg("Registrando...");
+
+      try {
+        const res = await fetch("/.netlify/functions/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        msg(data.message, data.success ? "green" : "red");
+
+        if (data.autoLogin) {
+          localStorage.setItem("user", data.user);
+          showAPI(data.user);
+        }
+      } catch (err) {
+        msg("Error de conexión", "red");
+      }
+    });
+
+    // ✅ LOGIN
+    document.getElementById("btn-login").addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (!username || !password) return msg("Completa usuario y contraseña", "red");
+
+      msg("Iniciando sesión...");
+
+      try {
+        const res = await fetch("/.netlify/functions/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        msg(data.message, data.success ? "green" : "red");
+
+        if (data.success) {
+          localStorage.setItem("user", data.user);
+          showAPI(data.user);
+        }
+      } catch (err) {
+        msg("Error al conectar", "red");
+      }
+    });
+  </script>
 </body>
 </html>
