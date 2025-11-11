@@ -1,45 +1,44 @@
 // netlify/functions/register.js
+const { getFile, putFile } = require('./helper_github');
+const crypto = require('crypto');
 
-import { writeFile, readFile } from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Método no permitido" };
-  }
-
+module.exports.handler = async function(event) {
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'only POST' };
   try {
-    const { username, password } = JSON.parse(event.body || "{}");
-    if (!username || !password) {
-      return { statusCode: 400, body: "Faltan datos" };
-    }
+    const body = JSON.parse(event.body || '{}');
+    const { username, password, email } = body;
+    if (!username || !password) return { statusCode: 400, body: JSON.stringify({ error: 'faltan campos' }) };
 
-    const usersFile = path.join(__dirname, "../../data/users.json");
-    const data = await readFile(usersFile, "utf8");
-    const users = JSON.parse(data);
+    const dbRaw = await getFile('db.json');
+    let db = dbRaw ? JSON.parse(dbRaw.content) : { users: {}, packages: {} };
 
-    if (users.find(u => u.username === username)) {
-      return { statusCode: 400, body: "Usuario ya existe" };
-    }
+    if (db.users[username]) return { statusCode: 409, body: JSON.stringify({ error: 'usuario existe' }) };
 
-    users.push({ username, password });
+    const salt = crypto.randomBytes(8).toString('hex');
+    const hash = crypto.createHash('sha256').update(salt + password).digest('hex');
+    const apikey = crypto.randomBytes(20).toString('hex');
 
-    await writeFile(usersFile, JSON.stringify(users, null, 2));
+    db.users[username] = {
+      email: email || '',
+      salt,
+      hash,
+      apikeys: [apikey],
+      created: new Date().toISOString()
+    };
 
-    // Respuesta con login automático
+    await putFile('db.json', JSON.stringify(db, null, 2), `register ${username}`);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
-        success: true,
-        message: "Registrado con éxito",
+        ok: true,
+        message: 'Registrado con éxito',
         autoLogin: true,
-        user: username
+        user: username,
+        apikey
       })
     };
   } catch (err) {
-    return { statusCode: 500, body: "Error interno: " + err.message };
+    return { statusCode: 500, body: JSON.stringify({ error: 'error interno', detail: err.message }) };
   }
-}
+};

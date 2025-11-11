@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Panel • nan</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Panel • nan</h2>
+      <div>
+        <span id="who" class="mono"></span>
+        <button id="btn-logout" style="margin-left:8px">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <section>
+      <h3>Tu API Key</h3>
+      <div id="apikey" class="mono"></div>
+      <button id="btn-gen">Regenerar API</button>
+    </section>
+
+    <section>
+      <h3>Publicar paquete</h3>
+      <input id="pkg-name" placeholder="nombre-paquete" />
+      <input id="pkg-version" placeholder="versión (ej: 1.0.0)" />
+      <input id="pkg-desc" placeholder="descripción" />
+      <input id="pkg-file" type="file" accept=".zip,.tar,.tar.gz" />
+      <button id="btn-publish">Publicar</button>
+      <div id="pub-msg" class="msg"></div>
+    </section>
+
+    <section>
+      <h3>Buscar / Ver paquetes</h3>
+      <input id="search" placeholder="buscar paquete..." />
+      <button id="btn-refresh">Actualizar lista</button>
+      <div id="packages" style="margin-top:8px"></div>
+    </section>
+
+    <section>
+      <h3>Privacidad</h3>
+      <p>Guardamos solo lo necesario: usuario, email opcional, claves API (para publicar), y metadatos de paquetes. Nunca vendemos datos.</p>
+    </section>
+
+    <section>
+      <h3>Tutoriales</h3>
+      <ul>
+        <li>Cómo publicar: prepara .zip del paquete, luego usa la sección "Publicar paquete".</li>
+        <li>Cómo instalar: usar el comando mostrado en la página principal.</li>
+      </ul>
+    </section>
+  </main>
+
+<script>
+const APIROOT = '/.netlify/functions';
+const $ = id => document.getElementById(id);
+
+const user = localStorage.getItem('user');
+if (!user) location.href = '/';
+
+$('who').innerText = user;
+
+const apikey = localStorage.getItem('apikey') || '';
+$('apikey').innerText = apikey || 'No generada. Usa "Regenerar API"';
+
+async function refreshPackages(){
+  $('packages').innerText = 'Cargando...';
+  try {
+    const res = await fetch(APIROOT + '/listPackages');
+    const j = await res.json();
+    const pkgs = j.packages || {};
+    if (Object.keys(pkgs).length === 0) { $('packages').innerText = 'No hay paquetes aún.'; return; }
+    const html = [];
+    for (const name of Object.keys(pkgs)){
+      html.push(`<strong>${name}</strong>`);
+      const versions = pkgs[name].versions || {};
+      for (const v of Object.keys(versions)){
+        const info = versions[v];
+        html.push(`<div style="margin-left:8px">• ${v} — ${info.description || ''} — <small>${info.uploaded_by || ''}</small></div>`);
+      }
+    }
+    $('packages').innerHTML = html.join('');
+  } catch (err) {
+    $('packages').innerText = 'Error cargando paquetes';
+  }
+}
+
+$('btn-refresh').addEventListener('click', refreshPackages);
+refreshPackages();
+
+$('btn-logout').addEventListener('click', () => {
+  localStorage.removeItem('user');
+  localStorage.removeItem('apikey');
+  location.href = '/';
+});
+
+$('btn-gen').addEventListener('click', async () => {
+  $('apikey').innerText = 'Generando...';
+  try {
+    const res = await fetch(APIROOT + '/generateApi', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username: user, password: '', apikey: localStorage.getItem('apikey') || '' })
+    });
+    const j = await res.json();
+    if (j.ok && j.apikey) {
+      localStorage.setItem('apikey', j.apikey);
+      $('apikey').innerText = j.apikey;
+      $('pub-msg').innerText = 'API actualizada';
+    } else {
+      $('apikey').innerText = localStorage.getItem('apikey') || 'Error';
+      $('pub-msg').innerText = j.error || 'No se pudo generar';
+    }
+  } catch (err) {
+    $('pub-msg').innerText = 'Error al generar API';
+  }
+});
+
+/* Publicar: usa endpoint publish (ya lo tienes) */
+$('btn-publish').addEventListener('click', async () => {
+  const name = $('pkg-name').value.trim();
+  const version = $('pkg-version').value.trim();
+  const desc = $('pkg-desc').value.trim();
+  const file = $('pkg-file').files[0];
+  if (!name || !version || !file) return $('pub-msg').innerText = 'Completa nombre, versión y archivo';
+  $('pub-msg').innerText = 'Leyendo archivo...';
+  const b = await file.arrayBuffer();
+  const b64 = btoa(String.fromCharCode(...new Uint8Array(b)));
+  const body = { apikey: localStorage.getItem('apikey') || '', name, version, description: desc, file_b64: b64, filename: file.name };
+  $('pub-msg').innerText = 'Subiendo...';
+  try {
+    const res = await fetch(APIROOT + '/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const j = await res.json();
+    if (j.ok) {
+      $('pub-msg').innerText = `Publicado ${j.name}@${j.version}`;
+      refreshPackages();
+    } else {
+      $('pub-msg').innerText = j.error || JSON.stringify(j);
+    }
+  } catch (err) {
+    $('pub-msg').innerText = 'Error subiendo paquete';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,40 +1,37 @@
 // netlify/functions/login.js
+const { getFile } = require('./helper_github');
+const crypto = require('crypto');
 
-import { readFile } from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export async function handler(event) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Método no permitido" };
-  }
-
+module.exports.handler = async function(event) {
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'only POST' };
   try {
-    const { username, password } = JSON.parse(event.body || "{}");
-    if (!username || !password) {
-      return { statusCode: 400, body: "Faltan datos" };
-    }
+    const body = JSON.parse(event.body || '{}');
+    const { username, password } = body;
+    if (!username || !password) return { statusCode: 400, body: JSON.stringify({ error: 'faltan campos' }) };
 
-    const usersFile = path.join(__dirname, "../../data/users.json");
-    const data = await readFile(usersFile, "utf8");
-    const users = JSON.parse(data);
+    const dbRaw = await getFile('db.json');
+    if (!dbRaw) return { statusCode: 400, body: JSON.stringify({ error: 'no db' }) };
+    const db = JSON.parse(dbRaw.content);
 
-    const user = users.find(u => u.username === username && u.password === password);
-    if (!user) {
-      return { statusCode: 401, body: "Usuario o contraseña incorrectos" };
-    }
+    const user = db.users[username];
+    if (!user) return { statusCode: 401, body: JSON.stringify({ error: 'usuario no existe' }) };
+
+    const hash = crypto.createHash('sha256').update(user.salt + password).digest('hex');
+    if (hash !== user.hash) return { statusCode: 401, body: JSON.stringify({ error: 'credenciales invalidas' }) };
+
+    // devolver primer apikey si existe
+    const apikey = (user.apikeys && user.apikeys.length) ? user.apikeys[0] : null;
 
     return {
       statusCode: 200,
       body: JSON.stringify({
-        success: true,
-        message: "Inicio de sesión correcto",
-        user: username
+        ok: true,
+        message: 'Inicio de sesión correcto',
+        user: username,
+        apikey
       })
     };
   } catch (err) {
-    return { statusCode: 500, body: "Error interno: " + err.message };
+    return { statusCode: 500, body: JSON.stringify({ error: 'error interno', detail: err.message }) };
   }
-}
+};}

@@ -1,11 +1,13 @@
-:root{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
-body{margin:0;background:#f3f6fb;color:#051025}
-.wrap{max-width:880px;margin:32px auto;padding:26px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.06)}
-h1{margin:0 0 10px}
-input{display:block;margin:8px 0;padding:10px;border:1px solid #e2e8f0;border-radius:8px;width:100%}
+:root{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#f4f7fb,#eef3fb);color:#04132a}
+.wrap{max-width:1000px;margin:28px auto;padding:22px;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,.08)}
+h1,h2,h3{margin:0 0 8px}
+input,button{font-size:15px}
+input{display:block;margin:8px 0;padding:10px;border:1px solid #e6edf6;border-radius:8px;width:100%}
 button{padding:10px 14px;border-radius:8px;border:0;background:#0b74de;color:#fff;cursor:pointer}
 .row{display:flex;gap:8px}
+.msg{margin-top:10px;color:#334155}
+.mono{background:#0b1220;color:#fff;padding:8px;border-radius:6px;overflow:auto;display:inline-block}
 section{margin-top:18px}
-.msg{margin-top:8px;color:#334155}
-.mono{background:#0b1220;color:#fff;padding:8px;border-radius:6px;overflow:auto}
-footer{margin-top:18px;color:#6b7280}
+header{margin-bottom:12px}
