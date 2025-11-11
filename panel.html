@@ -6,35 +6,43 @@
   <title>Panel • nan Registry</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    body { background:#0a0a0a; color:#f5f5f5; font-family:system-ui; }
-    main.wrap { max-width:800px; margin:auto; padding:2rem; }
-    h1,h2,h3 { color:#00d9ff; }
-    input,button,textarea {
-      background:#1a1a1a; border:1px solid #333; color:#fff;
-      padding:0.6rem; border-radius:8px; width:100%;
-    }
-    button {
-      background:#00d9ff; color:#000; font-weight:bold;
-      cursor:pointer; transition:0.3s;
-    }
-    button:hover { background:#00bfe0; }
-    section { margin-top:2rem; padding:1rem; background:#111; border-radius:12px; }
-    footer { margin-top:2rem; text-align:center; color:#777; }
-    .msg { margin-top:0.5rem; color:#0f0; }
-    .error { color:#f33; }
-    .mono { font-family:monospace; background:#191919; padding:0.5rem; border-radius:6px; }
+    body { background:#0f1724; color:#e6eef8; font-family:Inter,system-ui; }
+    main.wrap { max-width:980px; margin:28px auto; padding:20px; background:#071026; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.6); }
+    h1,h2,h3 { color:#7dd3fc; margin:0 0 8px }
+    input,button,textarea,select { background:#071428; border:1px solid #123; color:#e6eef8; padding:10px; border-radius:8px; width:100%; box-sizing:border-box }
+    button { background:#06b6d4; color:#001; font-weight:600; border:none; cursor:pointer }
+    section { margin-top:18px; padding:12px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)) }
+    .mono { font-family:monospace; background:#022036; padding:8px; border-radius:6px; display:inline-block; color:#9be7ff }
+    .row { display:flex; gap:8px; flex-wrap:wrap }
+    .msg { margin-top:8px; color:#9be7ff }
+    .error { color:#fb7185 }
+    small { color:#9fb6c6 }
+    a { color:#9be7ff }
+    .pklist { max-height:220px; overflow:auto; background:#021826; padding:8px; border-radius:8px }
+    label{font-size:13px;color:#9fb6c6}
   </style>
 </head>
 <body>
   <main class="wrap">
-    <h1>nan • Panel del desarrollador</h1>
-    <p>Bienvenido <span id="user-name"></span>. Aquí puedes gestionar tus paquetes, generar nuevas API keys y subir tus repositorios.</p>
+    <header style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h1>nan • Panel del desarrollador</h1>
+        <small>Gestiona tus API, paquetes y repositorios</small>
+      </div>
+      <div style="text-align:right">
+        <div id="who" class="mono">—</div>
+        <button id="btn-logout" style="margin-top:8px">Cerrar sesión</button>
+      </div>
+    </header>
 
     <section id="apikey">
       <h3>Tu API Key</h3>
       <div id="api-output" class="mono">Cargando...</div>
-      <button id="btn-genapi">Generar nueva API Key</button>
-      <p><small>⚠️ Cada API solo puede usarse una vez al subir un paquete. Luego caduca.</small></p>
+      <div style="margin-top:8px">
+        <button id="btn-gen">Generar nueva API (requiere contraseña)</button>
+      </div>
+      <div id="api-msg" class="msg"></div>
+      <p><small>⚠️ Las claves comienzan con <strong>nann_</strong> y cada clave se marca como usada cuando publicas con ella (single-use).</small></p>
     </section>
 
     <section id="upload">
@@ -43,110 +51,226 @@
       <input id="pkg-name" placeholder="nombre-paquete" />
       <input id="pkg-version" placeholder="versión (ej: 1.0.0)" />
       <input id="pkg-desc" placeholder="descripción" />
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input id="pkg-file" type="file" accept=".zip,.tar,.tar.gz" />
-        <input id="pkg-git" placeholder="Repo Git o archive URL (opcional)" />
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1">
+          <label>Archivo (.zip/.tar) — opcional</label>
+          <input id="pkg-file" type="file" accept=".zip,.tar,.tar.gz" />
+        </div>
+        <div style="flex:1">
+          <label>Repo Git o archive URL (opcional)</label>
+          <input id="pkg-git" placeholder="https://github.com/user/repo or https://github.com/user/repo/archive/refs/heads/main.zip" />
+          <label style="margin-top:6px">Token para repo privado (opcional)</label>
+          <input id="pkg-git-token" placeholder="token para repos privados (opcional)" />
+        </div>
       </div>
-      <input id="pkg-git-token" placeholder="Token para repo privado (opcional)" />
-      <button id="btn-publish">Publicar</button>
-      <div id="pub-msg" class="msg"></div>
+      <div style="margin-top:10px">
+        <button id="btn-publish">Publicar paquete</button>
+        <div id="pub-msg" class="msg"></div>
+      </div>
+    </section>
+
+    <section id="search">
+      <h3>Buscar / Ver paquetes</h3>
+      <div class="row">
+        <input id="search-input" placeholder="buscar nombre o autor..." />
+        <button id="btn-search">Buscar</button>
+        <button id="btn-refresh">Actualizar lista</button>
+      </div>
+      <div id="packages" class="pklist" style="margin-top:10px">Cargando...</div>
     </section>
 
     <section id="repos">
-      <h3>Mis Paquetes / Repositorios</h3>
+      <h3>Mis repositorios añadidos</h3>
       <div id="my-packages" class="mono">Cargando...</div>
     </section>
 
     <section id="terms">
       <h3>Términos y privacidad</h3>
-      <p>nan registra solo datos técnicos mínimos para asegurar la integridad de los paquetes. Las API generadas son personales y temporales.</p>
-      <p>Subir un paquete implica aceptar nuestras <a href="#" style="color:#00d9ff;">políticas actualizadas</a>.</p>
+      <p>nan registra solo datos técnicos mínimos para asegurar la integridad de los paquetes. Las API generadas son personales y temporales. Al subir un paquete aceptas no subir malware ni contenido con copyright sin permiso.</p>
+      <p><a href="/privacy.md" target="_blank">Leer política de privacidad</a> · <a href="/terms.md" target="_blank">Términos</a></p>
     </section>
 
-    <footer>
-      <small>nan • Nova Team — 2025</small>
-    </footer>
+    <footer style="text-align:center;margin-top:18px"><small>nan • Nova Team — 2025</small></footer>
   </main>
 
   <script>
-    const apiOutput = document.getElementById('api-output');
-    const pubMsg = document.getElementById('pub-msg');
-    const user = localStorage.getItem('nan_user');
-    document.getElementById('user-name').textContent = user || 'desarrollador';
+    const APIROOT = '/.netlify/functions';
+    const $ = id => document.getElementById(id);
+    const user = localStorage.getItem('user');
+    if (!user) location.href = '/';
+    $('who').innerText = user;
 
-    // Cargar API Key actual
+    // Mostrar apikey si la tenemos en localStorage; si no, pedir al server
     async function loadApi() {
+      const local = localStorage.getItem('apikey');
+      if (local) {
+        $('api-output').innerText = local;
+        return;
+      }
+      $('api-output').innerText = 'Cargando...';
       try {
-        const res = await fetch('/.netlify/functions/generateApi?user=' + encodeURIComponent(user));
-        const data = await res.json();
-        apiOutput.textContent = data.api || '(sin API activa)';
-      } catch (e) {
-        apiOutput.textContent = 'Error al cargar API.';
+        const res = await fetch(APIROOT + '/generateApi?user=' + encodeURIComponent(user));
+        const j = await res.json();
+        if (j.ok && j.apikey) {
+          localStorage.setItem('apikey', j.apikey);
+          $('api-output').innerText = j.apikey;
+        } else {
+          $('api-output').innerText = '(no hay API generada)';
+        }
+      } catch (err) {
+        $('api-output').innerText = 'Error al cargar API.';
       }
     }
 
-    // Generar nueva API
-    document.getElementById('btn-genapi').onclick = async () => {
-      apiOutput.textContent = 'Generando...';
+    // Generar nueva API: pedimos contraseña en prompt (más sencillo)
+    $('btn-gen').addEventListener('click', async () => {
+      const pass = prompt('Introduce tu contraseña para generar una nueva API (no se guarda aquí):');
+      if (!pass) return;
+      $('api-msg').innerText = 'Generando...';
       try {
-        const res = await fetch('/.netlify/functions/generateApi', {
+        const res = await fetch(APIROOT + '/generateApi', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ user })
+          body: JSON.stringify({ username: user, password: pass })
         });
-        const data = await res.json();
-        apiOutput.textContent = data.api || 'Error generando API';
-      } catch (err) {
-        apiOutput.textContent = 'Error.';
-      }
-    };
-
-    // Publicar paquete
-    document.getElementById('btn-publish').onclick = async () => {
-      pubMsg.textContent = 'Subiendo...';
-      const formData = new FormData();
-      formData.append('user', user);
-      formData.append('api', apiOutput.textContent);
-      formData.append('name', document.getElementById('pkg-name').value);
-      formData.append('version', document.getElementById('pkg-version').value);
-      formData.append('desc', document.getElementById('pkg-desc').value);
-      const file = document.getElementById('pkg-file').files[0];
-      if (file) formData.append('file', file);
-      const git = document.getElementById('pkg-git').value;
-      if (git) formData.append('git', git);
-      const token = document.getElementById('pkg-git-token').value;
-      if (token) formData.append('token', token);
-
-      try {
-        const res = await fetch('/.netlify/functions/publish', { method:'POST', body:formData });
-        const data = await res.json();
-        if (data.ok) {
-          pubMsg.textContent = '✅ Paquete publicado correctamente.';
-          loadPackages();
+        const j = await res.json();
+        if (j.ok && j.apikey) {
+          localStorage.setItem('apikey', j.apikey);
+          $('api-output').innerText = j.apikey;
+          $('api-msg').innerText = 'API generada';
         } else {
-          pubMsg.textContent = '❌ ' + (data.error || 'Error publicando.');
+          $('api-msg').innerText = j.error || 'No se generó API';
         }
-      } catch {
-        pubMsg.textContent = 'Error en conexión.';
+      } catch (err) {
+        $('api-msg').innerText = 'Error generando API';
       }
-    };
+    });
 
-    // Cargar lista de paquetes del usuario
-    async function loadPackages() {
+    // PUBLICAR paquete: convertimos archivo a base64 (si hay) y enviamos JSON
+    $('btn-publish').addEventListener('click', async () => {
+      $('pub-msg').innerText = 'Preparando...';
+      const name = $('pkg-name').value.trim();
+      const version = $('pkg-version').value.trim();
+      const description = $('pkg-desc').value.trim();
+      const fileInput = $('pkg-file').files[0];
+      const giturl = $('pkg-git').value.trim();
+      const gittoken = $('pkg-git-token').value.trim();
+      const apikey = localStorage.getItem('apikey') || '';
+
+      if (!name || !version) { $('pub-msg').innerText = 'Completa nombre y versión'; return; }
+      if (!apikey) { $('pub-msg').innerText = 'Genera una API key antes'; return; }
+      let file_b64 = null, filename = null;
+      if (fileInput) {
+        $('pub-msg').innerText = 'Leyendo archivo...';
+        const buf = await fileInput.arrayBuffer();
+        file_b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        filename = fileInput.name;
+      }
+
+      const body = { apikey, name, version, description, file_b64, filename, git_repo_url: giturl || undefined, git_token: gittoken || undefined };
+
+      $('pub-msg').innerText = 'Subiendo...';
       try {
-        const res = await fetch('/.netlify/functions/servePackage?user=' + encodeURIComponent(user));
-        const data = await res.json();
-        const list = data.list || [];
-        document.getElementById('my-packages').innerHTML = list.length
-          ? list.map(x => `• ${x.name}@${x.version}`).join('<br>')
-          : '(sin paquetes)';
-      } catch {
-        document.getElementById('my-packages').textContent = 'Error cargando paquetes.';
+        const res = await fetch(APIROOT + '/publish', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(body)
+        });
+        const j = await res.json();
+        if (j.ok) {
+          $('pub-msg').innerText = '✅ Paquete publicado: ' + j.name + '@' + j.version;
+          localStorage.removeItem('apikey'); // la apikey se consume (single-use)
+          loadApi();
+          refreshPackages();
+        } else {
+          $('pub-msg').innerText = j.error || 'Error publicando';
+        }
+      } catch (err) {
+        $('pub-msg').innerText = 'Error en la conexión';
+      }
+    });
+
+    // LISTAR / BUSCAR paquetes
+    async function refreshPackages() {
+      $('packages').innerText = 'Cargando paquetes...';
+      try {
+        const res = await fetch(APIROOT + '/listPackages');
+        const j = await res.json();
+        if (!j.ok) { $('packages').innerText = 'Error cargando paquetes'; return; }
+        const pkgs = j.packages || {};
+        if (Object.keys(pkgs).length === 0) { $('packages').innerText = '(Aún no hay paquetes publicados)'; return; }
+        renderPackages(pkgs);
+      } catch (err) {
+        $('packages').innerText = 'Error cargando paquetes';
       }
     }
 
+    function renderPackages(pkgs) {
+      const arr = [];
+      for (const name of Object.keys(pkgs)) {
+        const versions = pkgs[name].versions || {};
+        for (const v of Object.keys(versions)) {
+          const info = versions[v];
+          arr.push({ name, version: v, description: info.description || '', uploaded_by: info.uploaded_by || '' });
+        }
+      }
+      // show full list
+      $('packages').innerHTML = arr.map(p => `<div style="padding:6px;border-bottom:1px solid #022">${p.name}@${p.version} — ${p.description} <br><small>by ${p.uploaded_by}</small></div>`).join('');
+    }
+
+    // BUSCAR
+    $('btn-search').addEventListener('click', async () => {
+      const q = $('search-input').value.trim().toLowerCase();
+      if (!q) return refreshPackages();
+      const res = await fetch(APIROOT + '/listPackages');
+      const j = await res.json();
+      const pkgs = j.packages || {};
+      const arr = [];
+      for (const name of Object.keys(pkgs)) {
+        const versions = pkgs[name].versions || {};
+        for (const v of Object.keys(versions)) {
+          const info = versions[v];
+          const text = `${name} ${v} ${info.description || ''} ${info.uploaded_by || ''}`.toLowerCase();
+          if (text.includes(q)) arr.push({ name, version: v, description: info.description || '', uploaded_by: info.uploaded_by || '' });
+        }
+      }
+      if (arr.length === 0) { $('packages').innerText = '(No se encontraron resultados)'; return; }
+      $('packages').innerHTML = arr.map(p => `<div style="padding:6px;border-bottom:1px solid #022">${p.name}@${p.version} — ${p.description} <br><small>by ${p.uploaded_by}</small></div>`).join('');
+    });
+
+    $('btn-refresh').addEventListener('click', refreshPackages);
+
+    // Cargar mis paquetes (subidos por este usuario)
+    async function loadMyPackages() {
+      try {
+        const res = await fetch(APIROOT + '/listPackages');
+        const j = await res.json();
+        const pkgs = j.packages || {};
+        const mine = [];
+        for (const name of Object.keys(pkgs)) {
+          const versions = pkgs[name].versions || {};
+          for (const v of Object.keys(versions)) {
+            const info = versions[v];
+            if ((info.uploaded_by || '') === user) mine.push({ name, version: v });
+          }
+        }
+        $('my-packages').innerHTML = mine.length ? mine.map(p => `• ${p.name}@${p.version}`).join('<br>') : '(sin paquetes)';
+      } catch {
+        $('my-packages').innerText = 'Error cargando tus paquetes';
+      }
+    }
+
+    // Logout
+    $('btn-logout').addEventListener('click', () => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('apikey');
+      location.href = '/';
+    });
+
+    // init
     loadApi();
-    loadPackages();
+    refreshPackages();
+    loadMyPackages();
   </script>
 </body>
 </html>
